@@ -89,10 +89,10 @@ export const Hero = () => {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="flex flex-col sm:flex-row items-center justify-center gap-4"
         >
-          <Link href="/quiz-start" className="group relative px-8 py-4 rounded-full glow-button text-lg font-semibold text-primary-foreground flex items-center gap-3 animate-pulse-glow hover:bg-primary-foreground hover:text-primary">
+          <Link href="/create-room" className="group relative px-8 py-4 rounded-full glow-button text-lg font-semibold text-primary-foreground flex items-center gap-3 animate-pulse-glow hover:bg-primary-foreground hover:text-primary">
             <Play className="w-5 h-5 fill-current" />
 
-            Start a Quiz
+            Create Room
             <span className="absolute inset-0 rounded-full animate-shimmer" />
           </Link>
         </motion.div>

@@ -7,8 +7,8 @@ export default function LovableLandingPage() {
   return (
     <main className="min-h-screen" style={{ background: "var(--gradient-hero)" }}>
       <Hero />
-     {/* <Features /> */}
-    {/* <CTA /> */}
+      {/* <Features /> */}
+      {/* <CTA /> */}
       <Footer />
     </main>
   );
