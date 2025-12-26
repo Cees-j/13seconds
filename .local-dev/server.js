@@ -10,10 +10,41 @@ const io = new Server(httpServer, {
   },
 });
 
+const server_side_rooms = {};
+
 io.on("connection", (socket) => {
-  game_loop();
-  console.log('Client connected');
+  socket.on("join_room", (roomId) => {
+
+    if (!server_side_rooms[roomId]) {
+      server_side_rooms[roomId] = [];
+    }
+    server_side_rooms[roomId].push(socket.id);
+
+    socket.join(roomId);
+    console.log(`Client joined room ${roomId}`);
+  });
+ // game_loop();
+
+  socket.on("start_quiz", (roomId) => {
+    console.log(`Starting quiz for room ${roomId}`);
+    console.log('\n', 'server_side_rooms', server_side_rooms, '\n');
+    io.to(roomId).emit("start_quiz_response", "Starting quiz...");
+    
+  });
 });
+
+io.on("disconnect", (socket) => {
+  console.log(`Client disconnected from room ${socket.room}`);
+  if (server_side_rooms[roomId]) {
+    server_side_rooms[roomId] = server_side_rooms[roomId].filter((id) => id !== socket.id);
+  }
+  if (server_side_rooms[roomId].length === 0) {
+    delete server_side_rooms[roomId];
+  }
+  socket.leave(roomId);
+  console.log(`Client left room ${roomId}`);
+});
+
 
 httpServer.listen(8080, () => {
     console.log('Server is running on port 8080');

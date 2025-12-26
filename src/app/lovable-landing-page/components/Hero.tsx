@@ -4,8 +4,18 @@ import { motion } from "framer-motion";
 import { Sparkles, FloatingNotes } from "./Sparkles";
 import { Play } from "lucide-react";
 import Link from "next/link";
+import { v4 as uuidv4 } from 'uuid';
+import { useEffect, useState } from "react";
+
+
 
 export const Hero = () => {
+
+  const [roomId, setRoomId] = useState<string>("");
+  useEffect(() => {
+    setRoomId("13seconds-" + uuidv4());
+  }, []);
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden px-4 py-20">
       {/* Background gradient */}
@@ -89,7 +99,7 @@ export const Hero = () => {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="flex flex-col sm:flex-row items-center justify-center gap-4"
         >
-          <Link href="/create-room" className="group relative px-8 py-4 rounded-full glow-button text-lg font-semibold text-primary-foreground flex items-center gap-3 animate-pulse-glow hover:bg-primary-foreground hover:text-primary">
+          <Link href={`/room/${roomId}`} className="group relative px-8 py-4 rounded-full glow-button text-lg font-semibold text-primary-foreground flex items-center gap-3 animate-pulse-glow hover:bg-primary-foreground hover:text-primary">
             <Play className="w-5 h-5 fill-current" />
 
             Create Room
