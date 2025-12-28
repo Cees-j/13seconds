@@ -10,19 +10,39 @@ const io = new Server(httpServer, {
   },
 });
 
-const server_side_rooms = {};
+let server_side_rooms = {};
 
-io.on("connection", (socket) => {
+const createServerSideRoomSchema = () => {
+  return {
+  players: [],
+  questions: [],
+    currentQuestion: 0,
+    currentQuestionIndex: 0,
+    currentQuestionTime: 13
+  };
+};
+
+const initial_connection_and_room_setup = (socket) => {
+  /* sets up the server side room but also joins the socket.join roomId */
+
   socket.on("join_room", (roomId) => {
+    console.log(`Client joined room ${roomId}`);
+    console.log('\n', 'server_side_rooms', server_side_rooms, '\n');
 
     if (!server_side_rooms[roomId]) {
-      server_side_rooms[roomId] = [];
+      server_side_rooms[roomId] = createServerSideRoomSchema();
     }
-    server_side_rooms[roomId].push(socket.id);
+    server_side_rooms[roomId].players.push(socket.id);
 
+    console.log('\n', 'server_side_rooms', server_side_rooms, '\n');
     socket.join(roomId);
     console.log(`Client joined room ${roomId}`);
   });
+};
+
+io.on("connection", (socket) => {
+  initial_connection_and_room_setup(socket);
+
  // game_loop();
 
   socket.on("start_quiz", (roomId) => {
@@ -33,17 +53,19 @@ io.on("connection", (socket) => {
   });
 });
 
-io.on("disconnect", (socket) => {
-  console.log(`Client disconnected from room ${socket.room}`);
-  if (server_side_rooms[roomId]) {
-    server_side_rooms[roomId] = server_side_rooms[roomId].filter((id) => id !== socket.id);
-  }
-  if (server_side_rooms[roomId].length === 0) {
-    delete server_side_rooms[roomId];
-  }
-  socket.leave(roomId);
-  console.log(`Client left room ${roomId}`);
-});
+  io.on("disconnect", (socket) => {
+    console.log(`Client disconnected from room ${socket.room}`);
+    if (server_side_rooms[roomId]) {
+      server_side_rooms[roomId].players = server_side_rooms[roomId].players.filter((id) => id !== socket.id);
+    }
+    if (server_side_rooms[roomId].players.length === 0) {
+      delete server_side_rooms[roomId];
+    }
+    socket.leave(roomId);
+    console.log(`Client left room ${roomId}`);
+  });
+
+
 
 
 httpServer.listen(8080, () => {

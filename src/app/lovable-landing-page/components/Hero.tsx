@@ -99,7 +99,11 @@ export const Hero = () => {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="flex flex-col sm:flex-row items-center justify-center gap-4"
         >
-          <Link href={`/room/${roomId}`} className="group relative px-8 py-4 rounded-full glow-button text-lg font-semibold text-primary-foreground flex items-center gap-3 animate-pulse-glow hover:bg-primary-foreground hover:text-primary">
+          <Link 
+            href={`/room/${roomId}`}
+            className="group relative px-8 py-4 rounded-full glow-button text-lg font-semibold text-primary-foreground flex items-center gap-3 animate-pulse-glow hover:bg-primary-foreground hover:text-primary"
+           // prefetch={false}
+            >
             <Play className="w-5 h-5 fill-current" />
 
             Create Room
