@@ -22,34 +22,44 @@ const createServerSideRoomSchema = () => {
   };
 };
 
-const initial_connection_and_room_setup = (socket) => {
+const handle_join_room = (socket, roomId) => {
   /* sets up the server side room but also joins the socket.join roomId */
+  console.log(`Client joined room ${roomId}`);
+  console.log('\n', 'server_side_rooms', server_side_rooms, '\n');
 
-  socket.on("join_room", (roomId) => {
-    console.log(`Client joined room ${roomId}`);
-    console.log('\n', 'server_side_rooms', server_side_rooms, '\n');
+  if (!server_side_rooms[roomId]) {
+    server_side_rooms[roomId] = createServerSideRoomSchema();
+  }
+  server_side_rooms[roomId].players.push(socket.id);
 
-    if (!server_side_rooms[roomId]) {
-      server_side_rooms[roomId] = createServerSideRoomSchema();
-    }
-    server_side_rooms[roomId].players.push(socket.id);
-
-    console.log('\n', 'server_side_rooms', server_side_rooms, '\n');
-    socket.join(roomId);
-    console.log(`Client joined room ${roomId}`);
-  });
+  console.log('\n', 'server_side_rooms', server_side_rooms, '\n');
+  socket.join(roomId);
+  console.log(`Client joined room ${roomId}`);
 };
 
-io.on("connection", (socket) => {
-  initial_connection_and_room_setup(socket);
+const handle_submit_answer = (socket, roomId, answer) => {
+  console.log(`Client submitted answer ${answer} for room ${roomId}`);
+  io.to(roomId).emit("next_question", "Next question...");
+}
 
- // game_loop();
+
+
+
+io.on("connection", (socket) => {
+  // All socket listeners in one place
+  
+  socket.on("join_room", (roomId) => {
+    handle_join_room(socket, roomId);
+  });
 
   socket.on("start_quiz", (roomId) => {
     console.log(`Starting quiz for room ${roomId}`);
     console.log('\n', 'server_side_rooms', server_side_rooms, '\n');
     io.to(roomId).emit("start_quiz_response", "Starting quiz...");
-    
+  });
+
+  socket.on("submit_answer", (data) => {
+    handle_submit_answer(socket, data.room_id, data.answer);
   });
 });
 

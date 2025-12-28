@@ -3,13 +3,14 @@ import { Play, Volume2, Disc3 } from "lucide-react";
 import { useState } from "react";
 
 type VinylPlayerMiddleProps = {
-  questions: string[];
+  answers: string[];
   selected_answer: string | null;
   set_selected_answer: (answer: string) => void;
   song_sound: HTMLAudioElement;
+  on_submit: () => void;
 }
 
-const VinylPlayerMiddle = ({ questions, selected_answer, set_selected_answer, song_sound }: VinylPlayerMiddleProps) => {
+const VinylPlayerMiddle = ({ answers, selected_answer, set_selected_answer, song_sound, on_submit }: VinylPlayerMiddleProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
 
   const handlePlay = () => {
@@ -93,18 +94,18 @@ const VinylPlayerMiddle = ({ questions, selected_answer, set_selected_answer, so
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          {questions[0]}
+          Name the song
         </motion.p>
       </div>
 
       {/* Bottom answers - horizontal scroll on mobile */}
       <div className="grid grid-cols-2 gap-3 mt-auto pt-6">
-        {questions.map((question, index) => {
-          const isSelected = selected_answer === question;
+        {answers.map((answer, index) => {
+          const isSelected = selected_answer === answer;
           return (
             <motion.button
-              key={question}
-              onClick={() => set_selected_answer(question)}
+              key={answer}
+              onClick={() => set_selected_answer(answer)}
               className={`p-5 rounded-2xl text-center font-bold text-lg transition-all ${
                 isSelected
                   ? "text-white scale-[1.02]"
@@ -120,11 +121,33 @@ const VinylPlayerMiddle = ({ questions, selected_answer, set_selected_answer, so
               transition={{ duration: 0.2, ease: "easeInOut", delay: 0.01 }}
               whileTap={{ scale: 0.96 }}
             >
-              {question}
+              {answer}
             </motion.button>
           );
         })}
       </div>
+
+      {/* Submit button */}
+      <motion.button
+        onClick={on_submit}
+        disabled={!selected_answer}
+        className={`mt-6 p-4 rounded-2xl text-center font-bold text-xl transition-all ${
+          selected_answer
+            ? "text-white cursor-pointer"
+            : "bg-muted/30 text-muted-foreground cursor-not-allowed opacity-50"
+        }`}
+        style={selected_answer ? {
+          background: "var(--quiz-gradient)",
+          boxShadow: "0 4px 20px rgba(0, 212, 255, 0.4), 0 4px 20px rgba(255, 0, 255, 0.4)"
+        } : {}}
+        initial={{ y: 40, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.6, duration: 0.3 }}
+        whileHover={selected_answer ? { scale: 1.02, y: -2 } : {}}
+        whileTap={selected_answer ? { scale: 0.98 } : {}}
+      >
+        Submit
+      </motion.button>
     </motion.div>
   );
 };
