@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Play, Volume2, Disc3 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type VinylPlayerMiddleProps = {
   answers: string[];
@@ -12,6 +12,22 @@ type VinylPlayerMiddleProps = {
 
 const VinylPlayerMiddle = ({ answers, selected_answer, set_selected_answer, song_sound, on_submit }: VinylPlayerMiddleProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
+
+  // Autoplay when component mounts or song changes
+  useEffect(() => {
+    // Delay audio play by 0.3s to let UI buttons render first
+    const playTimeout = setTimeout(() => {
+      setIsPlaying(true);
+      song_sound.currentTime = 0;
+      song_sound.play().catch((error) => {
+        console.error("Error autoplaying song:", error);
+      });
+      setTimeout(() => setIsPlaying(false), 2000);
+    }, 300);
+
+    // Cleanup timeout on unmount
+    return () => clearTimeout(playTimeout);
+  }, [song_sound]);
 
   const handlePlay = () => {
     setIsPlaying(true);
@@ -94,7 +110,6 @@ const VinylPlayerMiddle = ({ answers, selected_answer, set_selected_answer, song
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          Name the song
         </motion.p>
       </div>
 
@@ -142,7 +157,7 @@ const VinylPlayerMiddle = ({ answers, selected_answer, set_selected_answer, song
         } : {}}
         initial={{ y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.6, duration: 0.3 }}
+        transition={{ delay: 0.01, duration: 0.3 }}
         whileHover={selected_answer ? { scale: 1.02, y: -2 } : {}}
         whileTap={selected_answer ? { scale: 0.98 } : {}}
       >

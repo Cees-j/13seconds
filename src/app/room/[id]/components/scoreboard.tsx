@@ -65,7 +65,7 @@ const Scoreboard = ({ object_of_scores }: ScoreboardProps) => {
         animate={{ scale: 1 }}
         transition={{ delay: 0.2 }}
       >
-        <h2 className="text-3xl font-bold gradient-text flex items-center justify-center gap-2">
+        <h2 className="text-3xl font-bold text-gold-light drop-shadow-[0_0_20px_hsl(48,95%,78%,0.5)] flex items-center justify-center gap-2">
           <Trophy className="w-8 h-8 text-primary" />
           Leaderboard
         </h2>

@@ -15,9 +15,7 @@ let server_side_rooms = {};
 const createServerSideRoomSchema = () => {
   return {
   players: {},
-  questions: {question_set_0: {answers: ['France','Paris',3,4,5,6,7,8,9,10]}, question_set_1: {answers: [11,12,13,14,15,16,17,18,19,20]}},
-    currentQuestion: 0,
-    currentQuestionIndex: 0,
+  questions: {question_set_0: {answers: ['22', "Don't Blame Me", 'I Did Something Bad', 'Miss Americana & The Heartbreak Prince', 'Red', 'The Man']}},currentQuestionIndex: 0,
     currentQuestionTime: 13
   };
 };
@@ -58,11 +56,12 @@ const handle_submit_answer = (socket, roomId, answer) => {
   }
 
   console.log ('currentQuestionIndex', server_side_rooms[roomId].currentQuestionIndex)
-  if (server_side_rooms[roomId].currentQuestionIndex === 1) {
+  if (server_side_rooms[roomId].currentQuestionIndex === 5) {
     io.to(roomId).emit("end_quiz", {
       message: "Quiz ended",
       playerScore: server_side_rooms[roomId].players[socket_id].score,
-      allScores: server_side_rooms[roomId].players
+      allScores: server_side_rooms[roomId].players,
+      currentQuestionIndex: server_side_rooms[roomId].currentQuestionIndex
     });
   } else {
     io.to(roomId).emit("next_question", {

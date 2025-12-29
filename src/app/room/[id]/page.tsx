@@ -6,19 +6,48 @@ import { StartQuizButton } from "./components/start-quiz-button";
 import VinylPlayerMiddle from "./components/vinyl-player-middle";
 import Scoreboard from "./components/scoreboard";
 import  HomeButton  from "./components/home-button";
+import LoadingScreen from "./components/loading-screen";
 import Link from "next/link";
 
 export default function main_quiz_room() {
 
   const { id } = useParams();
   const [is_quiz_started, set_is_quiz_started] = useState(false);
-  const [is_loading_complete, set_is_loading_complete] = useState(false);
   const [is_quiz_ended, set_is_quiz_ended] = useState(false);
+  const [is_loading_between_questions, set_is_loading_between_questions] = useState(false);
   const sounds = useRef<HTMLAudioElement[]>([]);
 
   const answers = {
-    question_key_0: {answers: ['France', 'Germany', 'Italy', 'Spain'], correct_answer: 'France', song_url: '/minecraft-villager-289282.mp3'}, 
-    question_key_1: {answers: ['Paris', 'Berlin', 'Rome', 'Madrid'], correct_answer: 'Paris', song_url: '/f1_radio_sound-293747.mp3'}
+    question_key_0: {
+      answers: ['22', 'Style', 'Shake It Off', 'We Are Never Getting Back Together'], 
+      correct_answer: '22', 
+      song_url: '/t_swift_cuts/22_START.mp3'
+    }, 
+    question_key_1: {
+      answers: ["Don't Blame Me", 'Look What You Made Me Do', 'Getaway Car', 'Delicate'], 
+      correct_answer: "Don't Blame Me", 
+      song_url: '/t_swift_cuts/Dont_Blame_Me_START.mp3'
+    },
+    question_key_2: {
+      answers: ['I Did Something Bad', 'End Game', 'Gorgeous', 'King of My Heart'], 
+      correct_answer: 'I Did Something Bad', 
+      song_url: '/t_swift_cuts/I_did_something_bad_START.mp3'
+    },
+    question_key_3: {
+      answers: ['Miss Americana & The Heartbreak Prince', 'Cruel Summer', 'The Archer', 'Lover'], 
+      correct_answer: 'Miss Americana & The Heartbreak Prince', 
+      song_url: '/t_swift_cuts/Miss_Americana-START.mp3'
+    },
+    question_key_4: {
+      answers: ['Red', 'All Too Well', 'I Knew You Were Trouble', 'State of Grace'], 
+      correct_answer: 'Red', 
+      song_url: '/t_swift_cuts/Red_TV_START.mp3'
+    },
+    question_key_5: {
+      answers: ['The Man', 'ME!', 'You Need To Calm Down', 'Paper Rings'], 
+      correct_answer: 'The Man', 
+      song_url: '/t_swift_cuts/The_Man_START.mp3'
+    }
   }
 
   const [selected_answer, set_selected_answer] = useState<string | null>(null);
@@ -60,8 +89,15 @@ export default function main_quiz_room() {
     socket.on("next_question", (message) => {
       console.log(message);
       set_all_scores(message.allScores);
-      set_answers_index(prev => prev + 1);
-
+      
+      // Start loading screen
+      set_is_loading_between_questions(true);
+      
+      // After 3 seconds, show next question
+      setTimeout(() => {
+        set_answers_index(prev => prev + 1);
+        set_is_loading_between_questions(false);
+      }, 1250);
     });
 
     socket.on("end_quiz", (message) => {
@@ -98,22 +134,28 @@ export default function main_quiz_room() {
 
   return (
     <div className="min-h-screen" style={{ background: "var(--gradient-hero)" }}>
-      <h1 className="text-4xl font-bold">13Seconds</h1>
+      <h1 className="text-5xl md:text-6xl font-bold text-center pt-8 pb-4">
+        <span className="text-gold-light drop-shadow-[0_0_20px_hsl(48,95%,78%,0.5)]">13</span>
+        <span className="text-foreground">seconds</span>
+      </h1>
 
       {!is_quiz_started && !is_quiz_ended && <StartQuizButton roomId={id as string} />}
 
-      {is_quiz_started && <div> 
-        <VinylPlayerMiddle
-          answers={answers[`question_key_${answers_index}` as keyof typeof answers].answers}
-          selected_answer={selected_answer}
-          set_selected_answer={set_selected_answer}
-          song_sound={sounds.current[answers_index] as HTMLAudioElement}
-          on_submit={handle_submit_answer}
-        />
-
-
-
-      </div>}
+      {is_quiz_started && (
+        <div>
+          {is_loading_between_questions ? (
+            <LoadingScreen />
+          ) : (
+            <VinylPlayerMiddle
+              answers={answers[`question_key_${answers_index}` as keyof typeof answers].answers}
+              selected_answer={selected_answer}
+              set_selected_answer={set_selected_answer}
+              song_sound={sounds.current[answers_index] as HTMLAudioElement}
+              on_submit={handle_submit_answer}
+            />
+          )}
+        </div>
+      )}
 
       {is_quiz_ended && 
         <div>
@@ -123,7 +165,6 @@ export default function main_quiz_room() {
         </Link>
         </div>
         }
-      {is_loading_complete && <div>Loading complete!</div>}
 
 
     </div>
