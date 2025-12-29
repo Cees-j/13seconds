@@ -41,22 +41,37 @@ const handle_join_room = (socket, roomId) => {
 const handle_submit_answer = (socket, roomId, answer) => {
   let socket_id = socket.id;
   console.log (server_side_rooms[roomId].players)
-  console.log ('ssd', server_side_rooms[roomId].players[`${socket_id}`].score)
+  console.log ('ssd', server_side_rooms[roomId].players[socket_id].score)
 
   
 
 
-  const current_question_set = server_side_rooms[roomId].questions[`question_set_${server_side_rooms[roomId].currentQuestionIndex}`]
+  const current_question_set = server_side_rooms[roomId].questions.question_set_0.answers
+  console.log ('current_question_set', current_question_set)
    
-  if (current_question_set.answers[server_side_rooms[roomId].currentQuestionIndex] === answer) {
+  if (current_question_set[server_side_rooms[roomId].currentQuestionIndex] === answer) {
     console.log(`Client socket id ${socket.id} answered correctly for room ${roomId}`);
-    // server_side_rooms[roomId].players.socket.id.score++;
+    server_side_rooms[roomId].players[socket_id].score++;
   }
   else {
     console.log(`Client socket id ${socket.id} answered incorrectly for room ${roomId}`);
   }
-  io.to(roomId).emit("next_question", "Next question...");
-  server_side_rooms[roomId].currentQuestionIndex++;
+
+  console.log ('currentQuestionIndex', server_side_rooms[roomId].currentQuestionIndex)
+  if (server_side_rooms[roomId].currentQuestionIndex === 1) {
+    io.to(roomId).emit("end_quiz", {
+      message: "Quiz ended",
+      playerScore: server_side_rooms[roomId].players[socket_id].score,
+      allScores: server_side_rooms[roomId].players
+    });
+  } else {
+    io.to(roomId).emit("next_question", {
+      message: "Next question...",
+      playerScore: server_side_rooms[roomId].players[socket_id].score,
+      allScores: server_side_rooms[roomId].players
+    });
+    server_side_rooms[roomId].currentQuestionIndex++;
+  }
 }
 
 
@@ -80,17 +95,17 @@ io.on("connection", (socket) => {
   });
 });
 
-  io.on("disconnect", (socket) => {
-    console.log(`Client disconnected from room ${socket.room}`);
-    if (server_side_rooms[roomId]) {
-      delete server_side_rooms[roomId].players[socket.id];
-    }
-    if (server_side_rooms[roomId] && Object.keys(server_side_rooms[roomId].players).length === 0) {
-      delete server_side_rooms[roomId];
-    }
-    socket.leave(roomId);
-    console.log(`Client left room ${roomId}`);
-  });
+io.on("disconnect", (socket) => {
+  console.log(`Client disconnected from room ${socket.room}`);
+  if (server_side_rooms[roomId]) {
+    delete server_side_rooms[roomId].players[socket.id];
+  }
+  if (server_side_rooms[roomId] && Object.keys(server_side_rooms[roomId].players).length === 0) {
+    delete server_side_rooms[roomId];
+  }
+  socket.leave(roomId);
+  console.log(`Client left room ${roomId}`);
+});
 
 
 

@@ -4,12 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { StartQuizButton } from "./components/start-quiz-button";
 import VinylPlayerMiddle from "./components/vinyl-player-middle";
+import Scoreboard from "./components/scoreboard";
+import  HomeButton  from "./components/home-button";
+import Link from "next/link";
 
 export default function main_quiz_room() {
 
   const { id } = useParams();
   const [is_quiz_started, set_is_quiz_started] = useState(false);
   const [is_loading_complete, set_is_loading_complete] = useState(false);
+  const [is_quiz_ended, set_is_quiz_ended] = useState(false);
   const sounds = useRef<HTMLAudioElement[]>([]);
 
   const answers = {
@@ -20,6 +24,7 @@ export default function main_quiz_room() {
   const [selected_answer, set_selected_answer] = useState<string | null>(null);
   const [answers_index, set_answers_index] = useState(0);
 
+  const [all_scores, set_all_scores] = useState<Record<string, { score: number }>>({});
 
   useEffect(() => {
     socket.connect();
@@ -54,7 +59,16 @@ export default function main_quiz_room() {
 
     socket.on("next_question", (message) => {
       console.log(message);
+      set_all_scores(message.allScores);
       set_answers_index(prev => prev + 1);
+
+    });
+
+    socket.on("end_quiz", (message) => {
+      console.log(message);
+      set_all_scores(message.allScores);
+      set_is_quiz_started(false);
+      set_is_quiz_ended(true);
     });
 
     // Cleanup: remove all listeners on unmount
@@ -84,11 +98,11 @@ export default function main_quiz_room() {
 
   return (
     <div className="min-h-screen" style={{ background: "var(--gradient-hero)" }}>
-      <h1>Main Quiz Room Page</h1>
+      <h1 className="text-4xl font-bold">13Seconds</h1>
 
-      {!is_quiz_started && <StartQuizButton roomId={id as string} />}
+      {!is_quiz_started && !is_quiz_ended && <StartQuizButton roomId={id as string} />}
 
-      {is_quiz_started && <div> Quiz started!
+      {is_quiz_started && <div> 
         <VinylPlayerMiddle
           answers={answers[`question_key_${answers_index}` as keyof typeof answers].answers}
           selected_answer={selected_answer}
@@ -101,6 +115,14 @@ export default function main_quiz_room() {
 
       </div>}
 
+      {is_quiz_ended && 
+        <div>
+        <Scoreboard object_of_scores={all_scores} />
+        <Link href="/">
+          <HomeButton />
+        </Link>
+        </div>
+        }
       {is_loading_complete && <div>Loading complete!</div>}
 
 
