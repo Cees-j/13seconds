@@ -13,8 +13,8 @@ export default function main_quiz_room() {
   const sounds = useRef<HTMLAudioElement[]>([]);
 
   const answers = {
-    question_key_0: {answers: ['France?', 'Germany?', 'Italy?', 'Spain?'], correct_answer: 'France?', song_url: '/minecraft-villager-289282.mp3'}, 
-    question_key_1: {answers: ['Paris?', 'Berlin?', 'Rome?', 'Madrid?'], correct_answer: 'Paris?', song_url: '/f1_radio_sound-293747.mp3'}
+    question_key_0: {answers: ['France', 'Germany', 'Italy', 'Spain'], correct_answer: 'France', song_url: '/minecraft-villager-289282.mp3'}, 
+    question_key_1: {answers: ['Paris', 'Berlin', 'Rome', 'Madrid'], correct_answer: 'Paris', song_url: '/f1_radio_sound-293747.mp3'}
   }
 
   const [selected_answer, set_selected_answer] = useState<string | null>(null);

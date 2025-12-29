@@ -14,8 +14,8 @@ let server_side_rooms = {};
 
 const createServerSideRoomSchema = () => {
   return {
-  players: [],
-  questions: [],
+  players: {},
+  questions: {question_set_0: {answers: ['France','Paris',3,4,5,6,7,8,9,10]}, question_set_1: {answers: [11,12,13,14,15,16,17,18,19,20]}},
     currentQuestion: 0,
     currentQuestionIndex: 0,
     currentQuestionTime: 13
@@ -30,16 +30,33 @@ const handle_join_room = (socket, roomId) => {
   if (!server_side_rooms[roomId]) {
     server_side_rooms[roomId] = createServerSideRoomSchema();
   }
-  server_side_rooms[roomId].players.push(socket.id);
+  server_side_rooms[roomId].players[socket.id] = { score: 0 };
 
   console.log('\n', 'server_side_rooms', server_side_rooms, '\n');
   socket.join(roomId);
   console.log(`Client joined room ${roomId}`);
+  console.log (server_side_rooms[roomId].players)
 };
 
 const handle_submit_answer = (socket, roomId, answer) => {
-  console.log(`Client submitted answer ${answer} for room ${roomId}`);
+  let socket_id = socket.id;
+  console.log (server_side_rooms[roomId].players)
+  console.log ('ssd', server_side_rooms[roomId].players[`${socket_id}`].score)
+
+  
+
+
+  const current_question_set = server_side_rooms[roomId].questions[`question_set_${server_side_rooms[roomId].currentQuestionIndex}`]
+   
+  if (current_question_set.answers[server_side_rooms[roomId].currentQuestionIndex] === answer) {
+    console.log(`Client socket id ${socket.id} answered correctly for room ${roomId}`);
+    // server_side_rooms[roomId].players.socket.id.score++;
+  }
+  else {
+    console.log(`Client socket id ${socket.id} answered incorrectly for room ${roomId}`);
+  }
   io.to(roomId).emit("next_question", "Next question...");
+  server_side_rooms[roomId].currentQuestionIndex++;
 }
 
 
@@ -66,9 +83,9 @@ io.on("connection", (socket) => {
   io.on("disconnect", (socket) => {
     console.log(`Client disconnected from room ${socket.room}`);
     if (server_side_rooms[roomId]) {
-      server_side_rooms[roomId].players = server_side_rooms[roomId].players.filter((id) => id !== socket.id);
+      delete server_side_rooms[roomId].players[socket.id];
     }
-    if (server_side_rooms[roomId].players.length === 0) {
+    if (server_side_rooms[roomId] && Object.keys(server_side_rooms[roomId].players).length === 0) {
       delete server_side_rooms[roomId];
     }
     socket.leave(roomId);
