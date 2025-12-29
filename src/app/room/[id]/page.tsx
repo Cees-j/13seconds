@@ -15,16 +15,18 @@ export default function main_quiz_room() {
   const [is_quiz_started, set_is_quiz_started] = useState(false);
   const [is_quiz_ended, set_is_quiz_ended] = useState(false);
   const [is_loading_between_questions, set_is_loading_between_questions] = useState(false);
+  const [answer_options, set_answer_options] = useState<Record<string, string[]>>({});
   const sounds = useRef<HTMLAudioElement[]>([]);
 
   const answers = {
     question_key_0: {
-      answers: ['22', 'Style', 'Shake It Off', 'We Are Never Getting Back Together'], 
+      answers: ['Style', 'Shake It Off', 'We Are Never Getting Back Together', '22'
+      ], 
       correct_answer: '22', 
       song_url: '/t_swift_cuts/22_START.mp3'
     }, 
     question_key_1: {
-      answers: ["Don't Blame Me", 'Look What You Made Me Do', 'Getaway Car', 'Delicate'], 
+      answers: ['Look What You Made Me Do', 'Getaway Car', 'Delicate', "Don't Blame Me"], 
       correct_answer: "Don't Blame Me", 
       song_url: '/t_swift_cuts/Dont_Blame_Me_START.mp3'
     },
@@ -34,17 +36,17 @@ export default function main_quiz_room() {
       song_url: '/t_swift_cuts/I_did_something_bad_START.mp3'
     },
     question_key_3: {
-      answers: ['Miss Americana & The Heartbreak Prince', 'Cruel Summer', 'The Archer', 'Lover'], 
+      answers: ['Cruel Summer', 'Miss Americana & The Heartbreak Prince', 'The Archer', 'Lover'], 
       correct_answer: 'Miss Americana & The Heartbreak Prince', 
       song_url: '/t_swift_cuts/Miss_Americana-START.mp3'
     },
     question_key_4: {
-      answers: ['Red', 'All Too Well', 'I Knew You Were Trouble', 'State of Grace'], 
+      answers: ['All Too Well', 'I Knew You Were Trouble', 'Red', 'State of Grace'], 
       correct_answer: 'Red', 
       song_url: '/t_swift_cuts/Red_TV_START.mp3'
     },
     question_key_5: {
-      answers: ['The Man', 'ME!', 'You Need To Calm Down', 'Paper Rings'], 
+      answers: ['ME!', 'The Man', 'You Need To Calm Down', 'Paper Rings'], 
       correct_answer: 'The Man', 
       song_url: '/t_swift_cuts/The_Man_START.mp3'
     }
@@ -81,9 +83,10 @@ export default function main_quiz_room() {
     });
 
     socket.on("start_quiz_response", (message) => {
-      set_answers_index(0);
-      set_is_quiz_started(true);
       console.log(message);
+      set_answers_index(0);
+      set_answer_options(message.answer_options);
+      set_is_quiz_started(true);
     });
 
     socket.on("next_question", (message) => {
@@ -140,7 +143,14 @@ export default function main_quiz_room() {
       </h1>
 
       {!is_quiz_started && !is_quiz_ended && <StartQuizButton roomId={id as string} />}
-
+      {!answer_options && <div>Loading...</div>}
+      {answer_options && (
+        <div>
+          {Object.keys(answer_options).map((key) => (
+            <div key={key}>{key}: {answer_options[key].join(', ')}</div>
+          ))}
+        </div>
+      )}
       {is_quiz_started && (
         <div>
           {is_loading_between_questions ? (
