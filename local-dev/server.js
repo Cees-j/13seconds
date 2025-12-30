@@ -1,6 +1,12 @@
-
 import { createServer } from "http";
 import { Server } from "socket.io";
+import { get_random_songs_from_server } from "./get_random_songs_from_server.js";
+
+
+let songs = await get_random_songs_from_server()
+
+console.log('Songs:', songs)
+
 
 const httpServer = createServer();
 const io = new Server(httpServer, {
