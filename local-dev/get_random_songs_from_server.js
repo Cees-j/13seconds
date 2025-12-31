@@ -27,24 +27,24 @@ export const get_random_songs_from_server = async () => {
     } else {
         // Print just the file names
 
-        const random_files_sorted = files.sort(() => Math.random() - 0.5).slice(0, 10)
+        const game_length_in_questions = 15
 
-        const decoy_pool = random_files_sorted.slice(10,40)
+        const random_files_sorted = files.sort(() => Math.random() - 0.5).slice(0, 40)
 
-        const questions = random_files_sorted.slice(0, 2).map((correctSong, i) => {
-            const startIdx = 2 + (i * 3) // grab 3 unique decoys per question
-            console.log('Start index:', startIdx)
-            const wrongAnswers = random_files_sorted.slice(startIdx, startIdx + 3)
-            console.log('Wrong answers:', wrongAnswers)
+        const decoy_pool = shuffle(random_files_sorted.slice(game_length_in_questions,40))
+
+        const questions = random_files_sorted.slice(0, game_length_in_questions).map((correctSong, i) => {
+            const wrongAnswers = shuffle(decoy_pool.slice(0, 3))
             return {
               audioUrl: getSignedUrl(correctSong.name),
               correctAnswer: correctSong.name,
               options: shuffle([correctSong.name, ...wrongAnswers.map(w => w.name)])
             }
           })
-          console.log('Questions:', questions)
-          console.log(getSignedUrl(correctSong.name))
+
+        return questions
+
     }
 }
 
-get_random_songs_from_server()
+//get_random_songs_from_server()

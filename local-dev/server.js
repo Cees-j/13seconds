@@ -2,12 +2,6 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import { get_random_songs_from_server } from "./get_random_songs_from_server.js";
 
-
-let songs = await get_random_songs_from_server()
-
-console.log('Songs:', songs)
-
-
 const httpServer = createServer();
 const io = new Server(httpServer, {
   cors: {
@@ -15,6 +9,10 @@ const io = new Server(httpServer, {
     methods: ["GET", "POST"],
   },
 });
+
+let songs = await get_random_songs_from_server()
+
+console.log('Songs:', songs)
 
 let server_side_rooms = {};
 
@@ -38,6 +36,8 @@ const createServerSideRoomSchema = () => {
     currentQuestionTime: 13
   };
 };
+
+
 
 const handle_join_room = (socket, roomId) => {
   /* sets up the server side room but also joins the socket.join roomId */
