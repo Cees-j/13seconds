@@ -13,6 +13,7 @@ const io = new Server(httpServer, {
 let songs = await get_random_songs_from_server()
 
 console.log('Songs:', songs)
+// each song has a audio url, a correct answer, and 4 options
 
 let server_side_rooms = {};
 
@@ -29,6 +30,25 @@ const createServerSideRoomSchema = () => {
           'Miss Americana & The Heartbreak Prince': ['Cruel Summer', 'The Archer', 'Lover'],
           'Red': ['All Too Well', 'I Knew You Were Trouble', 'State of Grace'],
           'The Man': ['ME!', 'You Need To Calm Down', 'Paper Rings']
+        }
+      }
+    }, 
+    currentQuestionIndex: 0,
+    currentQuestionTime: 13
+  };
+};
+
+const createServerSideRoomSchema2 = () => {
+  return {
+    players: {},
+    questions: {
+      question_set_0: {
+        answers: songs.map(song => song.name),
+        answer_options: {
+          [songs[0].name]: [songs[1].name, songs[2].name, songs[3].name],
+          [songs[1].name]: [songs[0].name, songs[2].name, songs[3].name],
+          [songs[2].name]: [songs[0].name, songs[1].name, songs[3].name],
+          [songs[3].name]: [songs[0].name, songs[1].name, songs[2].name]
         }
       }
     }, 
