@@ -13,80 +13,83 @@ const io = new Server(httpServer, {
 let songs = await get_random_songs_from_server()
 
 console.log('Songs:', songs)
+// for (const object of songs) {
+//   console.log(object.audioUrl)
+//   console.log(object.correctAnswer)
+//   console.log(object.options)
+// }
 // each song has a audio url, a correct answer, and 4 options
 
 let server_side_rooms = {};
 
-const createServerSideRoomSchema = () => {
-  return {
-    players: {},
-    questions: {
-      question_set_0: {
-        answers: ['22', "Don't Blame Me", 'I Did Something Bad', 'Miss Americana & The Heartbreak Prince', 'Red', 'The Man'],
-        answer_options: {
-          '22': ['Style', 'Shake It Off', 'We Are Never Getting Back Together'],
-          "Don't Blame Me": ['Look What You Made Me Do', 'Getaway Car', 'Delicate'],
-          'I Did Something Bad': ['End Game', 'Gorgeous', 'King of My Heart'],
-          'Miss Americana & The Heartbreak Prince': ['Cruel Summer', 'The Archer', 'Lover'],
-          'Red': ['All Too Well', 'I Knew You Were Trouble', 'State of Grace'],
-          'The Man': ['ME!', 'You Need To Calm Down', 'Paper Rings']
-        }
-      }
-    }, 
-    currentQuestionIndex: 0,
-    currentQuestionTime: 13
-  };
-};
+// const createServerSideRoomSchema = () => {
+//   return {
+//     players: {},
+//     questions: {
+//       question_set_0: {
+//         answers: ['22', "Don't Blame Me", 'I Did Something Bad', 'Miss Americana & The Heartbreak Prince', 'Red', 'The Man'],
+//         answer_options: {
+//           '22': ['Style', 'Shake It Off', 'We Are Never Getting Back Together'],
+//           "Don't Blame Me": ['Look What You Made Me Do', 'Getaway Car', 'Delicate'],
+//           'I Did Something Bad': ['End Game', 'Gorgeous', 'King of My Heart'],
+//           'Miss Americana & The Heartbreak Prince': ['Cruel Summer', 'The Archer', 'Lover'],
+//           'Red': ['All Too Well', 'I Knew You Were Trouble', 'State of Grace'],
+//           'The Man': ['ME!', 'You Need To Calm Down', 'Paper Rings']
+//         }
+//       }
+//     }, 
+//     currentQuestionIndex: 0,
+//     currentQuestionTime: 13
+//   };
+// };
 
-const createServerSideRoomSchema2 = () => {
-  return {
-    players: {},
-    questions: {
-      question_set_0: {
-        answers: songs.map(song => song.name),
-        answer_options: {
-          [songs[0].name]: [songs[1].name, songs[2].name, songs[3].name],
-          [songs[1].name]: [songs[0].name, songs[2].name, songs[3].name],
-          [songs[2].name]: [songs[0].name, songs[1].name, songs[3].name],
-          [songs[3].name]: [songs[0].name, songs[1].name, songs[2].name]
-        }
-      }
-    }, 
-    currentQuestionIndex: 0,
-    currentQuestionTime: 13
-  };
-};
+// const createServerSideRoomSchema2 = () => {
+//   return {
+//     players: {},
+//     questions: {
+//       question_set_0: {
+//         answers: songs.map(song => song.name),
+//         answer_options: {
+//           [songs[0].name]: [songs[1].name, songs[2].name, songs[3].name],
+//           [songs[1].name]: [songs[0].name, songs[2].name, songs[3].name],
+//           [songs[2].name]: [songs[0].name, songs[1].name, songs[3].name],
+//           [songs[3].name]: [songs[0].name, songs[1].name, songs[2].name]
+//         }
+//       }
+//     }, 
+//     currentQuestionIndex: 0,
+//     currentQuestionTime: 13
+//   };
+// };
 
 
 
-const handle_join_room = (socket, roomId) => {
+const handle_join_room = async (socket, roomId) => {
   /* sets up the server side room but also joins the socket.join roomId */
   console.log(`Client joined room ${roomId}`);
   console.log('\n', 'server_side_rooms', server_side_rooms, '\n');
 
   if (!server_side_rooms[roomId]) {
-    server_side_rooms[roomId] = createServerSideRoomSchema();
+    const questions = await get_random_songs_from_server()
+    server_side_rooms[roomId] = {
+      players: {},
+      question_sets: questions, 
+      currentQuestionIndex: 0,
+    }
   }
-  server_side_rooms[roomId].players[socket.id] = { score: 0 };
 
-  console.log('\n', 'server_side_rooms', server_side_rooms, '\n');
+  server_side_rooms[roomId].players[socket.id] = { score: 0 };
   socket.join(roomId);
-  console.log(`Client joined room ${roomId}`);
-  console.log(server_side_rooms[roomId].players)
+ 
 };
 
 const handle_submit_answer = (socket, roomId, answer) => {
-  let socket_id = socket.id;
-  console.log(server_side_rooms[roomId].players)
-  console.log('ssd', server_side_rooms[roomId].players[socket_id].score)
+  const socket_id = socket.id;
 
-
-
-
-  const current_question_set = server_side_rooms[roomId].questions.question_set_0.answers
+  const current_question_set = server_side_rooms[roomId].question_sets[server_side_rooms[roomId].currentQuestionIndex]
   console.log('current_question_set', current_question_set)
 
-  if (current_question_set[server_side_rooms[roomId].currentQuestionIndex] === answer) {
+  if (current_question_set.correctAnswer === answer) {
     console.log(`Client socket id ${socket.id} answered correctly for room ${roomId}`);
     server_side_rooms[roomId].players[socket_id].score++;
   }
@@ -125,10 +128,10 @@ io.on("connection", (socket) => {
   socket.on("start_quiz", (roomId) => {
     console.log(`Starting quiz for room ${roomId}`);
     console.log('\n', 'server_side_rooms', server_side_rooms, '\n');
-    console.log(server_side_rooms[roomId].questions.question_set_0.answer_options);
+    console.log(server_side_rooms[roomId].question_sets[server_side_rooms[roomId].currentQuestionIndex].answer_options);
     io.to(roomId).emit("start_quiz_response", {
       message: "Starting quiz...",
-      answer_options: server_side_rooms[roomId].questions.question_set_0.answer_options
+      answer_options: server_side_rooms[roomId].question_sets[server_side_rooms[roomId].currentQuestionIndex].answer_options
     });
   });
 

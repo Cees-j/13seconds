@@ -146,9 +146,9 @@ export default function main_quiz_room() {
       {!answer_options && <div>Loading...</div>}
       {answer_options && (
         <div>
-          {Object.keys(answer_options).map((key) => (
-            <div key={key}>{key}: {answer_options[key].join(', ')}</div>
-          ))}
+          {/* {answer_options.options.map((option: string, index: number) => (
+            <div key={index}>{option}</div>
+          ))} */}
         </div>
       )}
       {is_quiz_started && (
