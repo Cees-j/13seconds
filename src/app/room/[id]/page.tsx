@@ -15,55 +15,40 @@ export default function main_quiz_room() {
   const [is_quiz_started, set_is_quiz_started] = useState(false);
   const [is_quiz_ended, set_is_quiz_ended] = useState(false);
   const [is_loading_between_questions, set_is_loading_between_questions] = useState(false);
-  const [answer_options, set_answer_options] = useState<Record<string, string[]>>({});
-  const sounds = useRef<HTMLAudioElement[]>([]);
 
-  const answers = {
-    question_key_0: {
-      answers: ['Style', 'Shake It Off', 'We Are Never Getting Back Together', '22'
-      ], 
-      correct_answer: '22', 
-      song_url: '/t_swift_cuts/22_START.mp3'
-    }, 
-    question_key_1: {
-      answers: ['Look What You Made Me Do', 'Getaway Car', 'Delicate', "Don't Blame Me"], 
-      correct_answer: "Don't Blame Me", 
-      song_url: '/t_swift_cuts/Dont_Blame_Me_START.mp3'
-    },
-    question_key_2: {
-      answers: ['I Did Something Bad', 'End Game', 'Gorgeous', 'King of My Heart'], 
-      correct_answer: 'I Did Something Bad', 
-      song_url: '/t_swift_cuts/I_did_something_bad_START.mp3'
-    },
-    question_key_3: {
-      answers: ['Cruel Summer', 'Miss Americana & The Heartbreak Prince', 'The Archer', 'Lover'], 
-      correct_answer: 'Miss Americana & The Heartbreak Prince', 
-      song_url: '/t_swift_cuts/Miss_Americana-START.mp3'
-    },
-    question_key_4: {
-      answers: ['All Too Well', 'I Knew You Were Trouble', 'Red', 'State of Grace'], 
-      correct_answer: 'Red', 
-      song_url: '/t_swift_cuts/Red_TV_START.mp3'
-    },
-    question_key_5: {
-      answers: ['ME!', 'The Man', 'You Need To Calm Down', 'Paper Rings'], 
-      correct_answer: 'The Man', 
-      song_url: '/t_swift_cuts/The_Man_START.mp3'
-    }
-  }
+  const [answer_options_with_urls, set_answer_options_with_urls] = useState<Array<{ answer_options: string[], audioUrl: string, correctAnswer: string }>>([]);
+  const [quiz_length, set_quiz_length] = useState<number>(0);
+
+  const sounds = useRef<HTMLAudioElement[]>([]);
 
   const [selected_answer, set_selected_answer] = useState<string | null>(null);
   const [answers_index, set_answers_index] = useState(0);
 
   const [all_scores, set_all_scores] = useState<Record<string, { score: number }>>({});
 
+  // Processed questions array - set once when data arrives
+  const [questions, set_questions] = useState<Array<{ answers: string[], audio_url: string }>>([]);
+
+  // Process the questions when answer_options and audio_url change
+  useEffect(() => {
+    if (answer_options_with_urls.length > 0) {
+      console.log("Answer options with urls:", answer_options_with_urls);
+      const processed_questions = answer_options_with_urls.map((answer_options_with_url, index) => ({
+        answers: answer_options_with_url.answer_options,
+        audio_url: answer_options_with_url.audioUrl
+      }));
+      set_questions(processed_questions);
+    }
+  }, [answer_options_with_urls]);
+
+
   useEffect(() => {
     socket.connect();
 
-    socket.emit("join_room", id as string);
+    socket.emit("join_room", id as string); // as soon as navigate on create room this happens  
 
     // Preload all sounds at once
-    sounds.current = Object.values(answers).map(question => new Audio(question.song_url));
+    //sounds.current = Object.values(answers).map(question => new Audio(question.song_url));
 
     // Register all socket listeners
     socket.on("connect", () => {
@@ -85,7 +70,8 @@ export default function main_quiz_room() {
     socket.on("start_quiz_response", (message) => {
       console.log(message);
       set_answers_index(0);
-      set_answer_options(message.answer_options);
+      set_answer_options_with_urls(message.answer_options_with_urls);
+      set_quiz_length(message.quiz_length);
       set_is_quiz_started(true);
     });
 
@@ -143,24 +129,24 @@ export default function main_quiz_room() {
       </h1>
 
       {!is_quiz_started && !is_quiz_ended && <StartQuizButton roomId={id as string} />}
-      {!answer_options && <div>Loading...</div>}
-      {answer_options && (
+      {!answer_options_with_urls && <div>Loading...</div>}
+      {answer_options_with_urls && (
         <div>
           {/* {answer_options.options.map((option: string, index: number) => (
             <div key={index}>{option}</div>
           ))} */}
         </div>
       )}
-      {is_quiz_started && (
+      {is_quiz_started && questions.length > 0 && (
         <div>
           {is_loading_between_questions ? (
             <LoadingScreen />
           ) : (
             <VinylPlayerMiddle
-              answers={answers[`question_key_${answers_index}` as keyof typeof answers].answers}
+              answers={questions[answers_index].answers}
               selected_answer={selected_answer}
               set_selected_answer={set_selected_answer}
-              song_sound={sounds.current[answers_index] as HTMLAudioElement}
+              song_sound={new Audio(questions[answers_index].audio_url)}
               on_submit={handle_submit_answer}
             />
           )}

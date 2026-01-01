@@ -17,6 +17,17 @@ export const get_random_songs_from_server = async () => {
         return array.sort(() => Math.random() - 0.5)
     }
 
+    const normalize_file_name = (fileName) => {
+        // Remove .mp3 extension
+        let normalized = fileName.replace('.mp3', '')
+        // Remove position suffixes (_START, _MID, _END)
+        normalized = normalized.replace(/_(START|MID|END)$/, '')
+        // Replace underscores with spaces
+        normalized = normalized.replace(/_/g, ' ')
+        // Trim any extra whitespace
+        return normalized.trim()
+    }
+
 
     const { data: files, error: listError } = await supabase.storage
         .from('taylor-swift-songs')
@@ -33,16 +44,19 @@ export const get_random_songs_from_server = async () => {
 
         const decoy_pool = shuffle(random_files_sorted.slice(game_length_in_questions,40))
 
-        const questions = random_files_sorted.slice(0, game_length_in_questions).map((correctSong, i) => {
+        const answers_options_with_urls = await Promise.all(
+          random_files_sorted.slice(0, game_length_in_questions).map(async (correctSong, i) => {
             const wrongAnswers = shuffle(decoy_pool.slice(0, 3))
             return {
-              audioUrl: getSignedUrl(correctSong.name),
-              correctAnswer: correctSong.name,
-              options: shuffle([correctSong.name, ...wrongAnswers.map(w => w.name)])
+              audioUrl: await getSignedUrl(correctSong.name),
+              correctAnswer: normalize_file_name(correctSong.name),
+              answer_options: shuffle([correctSong.name, ...wrongAnswers.map(w => w.name)].map(normalize_file_name))
             }
           })
-
-        return questions
+        )
+        // console.log(answers_options_with_urls);
+        // console.log(answers_options_with_urls[0].audioUrl);
+        return answers_options_with_urls
 
     }
 }

@@ -23,11 +23,11 @@ const VinylPlayerMiddle = ({ answers, selected_answer, set_selected_answer, song
         console.error("Error autoplaying song:", error);
       });
       setTimeout(() => setIsPlaying(false), 2000);
-    }, 300);
+    }, 70);
 
     // Cleanup timeout on unmount
     return () => clearTimeout(playTimeout);
-  }, [song_sound]);
+  }, []);
 
   const handlePlay = () => {
     setIsPlaying(true);

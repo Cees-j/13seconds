@@ -10,9 +10,7 @@ const io = new Server(httpServer, {
   },
 });
 
-let songs = await get_random_songs_from_server()
-
-console.log('Songs:', songs)
+//console.log('Songs:', songs)
 // for (const object of songs) {
 //   console.log(object.audioUrl)
 //   console.log(object.correctAnswer)
@@ -66,14 +64,15 @@ let server_side_rooms = {};
 
 const handle_join_room = async (socket, roomId) => {
   /* sets up the server side room but also joins the socket.join roomId */
-  console.log(`Client joined room ${roomId}`);
-  console.log('\n', 'server_side_rooms', server_side_rooms, '\n');
+  // console.log(`Client joined room ${roomId}`);
+  // console.log('\n', 'server_side_rooms', server_side_rooms, '\n');
 
   if (!server_side_rooms[roomId]) {
-    const questions = await get_random_songs_from_server()
+    const answers_options_with_urls = await get_random_songs_from_server()
+    console.log("Answers options with urls:", answers_options_with_urls);
     server_side_rooms[roomId] = {
       players: {},
-      question_sets: questions, 
+      answers_options_with_urls: answers_options_with_urls, 
       currentQuestionIndex: 0,
     }
   }
@@ -86,7 +85,7 @@ const handle_join_room = async (socket, roomId) => {
 const handle_submit_answer = (socket, roomId, answer) => {
   const socket_id = socket.id;
 
-  const current_question_set = server_side_rooms[roomId].question_sets[server_side_rooms[roomId].currentQuestionIndex]
+  const current_question_set = server_side_rooms[roomId].answers_options_with_urls[server_side_rooms[roomId].currentQuestionIndex]
   console.log('current_question_set', current_question_set)
 
   if (current_question_set.correctAnswer === answer) {
@@ -126,12 +125,11 @@ io.on("connection", (socket) => {
   });
 
   socket.on("start_quiz", (roomId) => {
-    console.log(`Starting quiz for room ${roomId}`);
-    console.log('\n', 'server_side_rooms', server_side_rooms, '\n');
-    console.log(server_side_rooms[roomId].question_sets[server_side_rooms[roomId].currentQuestionIndex].answer_options);
+
     io.to(roomId).emit("start_quiz_response", {
       message: "Starting quiz...",
-      answer_options: server_side_rooms[roomId].question_sets[server_side_rooms[roomId].currentQuestionIndex].answer_options
+      answer_options_with_urls: server_side_rooms[roomId].answers_options_with_urls, // array of objects with answer_options and audioUrl
+      quiz_length: 13
     });
   });
 
