@@ -1,17 +1,19 @@
 "use client";
 import { socket } from "@/socket";
-import { useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useRef, useState, useMemo } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { StartQuizButton } from "./components/start-quiz-button";
 import VinylPlayerMiddle from "./components/vinyl-player-middle";
 import Scoreboard from "./components/scoreboard";
 import  HomeButton  from "./components/home-button";
 import LoadingScreen from "./components/loading-screen";
+import TimerBar from "./components/timer-bar";
 import Link from "next/link";
 
 export default function main_quiz_room() {
 
   const { id } = useParams();
+  const router = useRouter();
   const [is_quiz_started, set_is_quiz_started] = useState(false);
   const [is_quiz_ended, set_is_quiz_ended] = useState(false);
   const [is_loading_between_questions, set_is_loading_between_questions] = useState(false);
@@ -33,7 +35,7 @@ export default function main_quiz_room() {
   useEffect(() => {
     if (answer_options_with_urls.length > 0) {
       console.log("Answer options with urls:", answer_options_with_urls);
-      const processed_questions = answer_options_with_urls.map((answer_options_with_url, index) => ({
+      const processed_questions = answer_options_with_urls.map((answer_options_with_url) => ({
         answers: answer_options_with_url.answer_options,
         audio_url: answer_options_with_url.audioUrl
       }));
@@ -57,6 +59,7 @@ export default function main_quiz_room() {
     
     socket.on("disconnect", () => {
       console.log("Disconnected from server");
+      router.push("/");
     });
     
     socket.on("message", (message) => {
@@ -65,6 +68,7 @@ export default function main_quiz_room() {
     
     socket.on("connect_error", (error: any) => {
       console.log("connect_error", error);
+      router.push("/");
     });
 
     socket.on("start_quiz_response", (message) => {
@@ -121,12 +125,23 @@ export default function main_quiz_room() {
     }
   };
 
+  // Memoize the current audio object so it only recreates when the URL changes
+  const current_audio = useMemo(() => {
+    if (questions.length > 0 && questions[answers_index]) {
+      return new Audio(questions[answers_index].audio_url);
+    }
+    return null;
+  }, [questions, answers_index]);
+
   return (
     <div className="min-h-screen" style={{ background: "var(--gradient-hero)" }}>
       <h1 className="text-5xl md:text-6xl font-bold text-center pt-8 pb-4">
         <span className="text-gold-light drop-shadow-[0_0_20px_hsl(48,95%,78%,0.5)]">13</span>
         <span className="text-foreground">seconds</span>
       </h1>
+
+      {/* Timer bar - only show during active quiz */}
+      {is_quiz_started && !is_loading_between_questions && <TimerBar />}
 
       {!is_quiz_started && !is_quiz_ended && <StartQuizButton roomId={id as string} />}
       {!answer_options_with_urls && <div>Loading...</div>}
@@ -137,18 +152,21 @@ export default function main_quiz_room() {
           ))} */}
         </div>
       )}
-      {is_quiz_started && questions.length > 0 && (
+      {is_quiz_started && questions.length > 0 && current_audio && (
         <div>
           {is_loading_between_questions ? (
             <LoadingScreen />
           ) : (
+            <>
             <VinylPlayerMiddle
               answers={questions[answers_index].answers}
               selected_answer={selected_answer}
               set_selected_answer={set_selected_answer}
-              song_sound={new Audio(questions[answers_index].audio_url)}
+              song_sound={current_audio}
               on_submit={handle_submit_answer}
             />
+            
+            </>
           )}
         </div>
       )}

@@ -15,27 +15,37 @@ const VinylPlayerMiddle = ({ answers, selected_answer, set_selected_answer, song
 
   // Autoplay when component mounts or song changes
   useEffect(() => {
-    // Delay audio play by 0.3s to let UI buttons render first
+    // Set up event listener for when audio ends
+    const handleAudioEnd = () => {
+      setIsPlaying(false);
+    };
+
+    song_sound.addEventListener('ended', handleAudioEnd);
+
+    // Delay audio play by 0.07s to let UI buttons render first
     const playTimeout = setTimeout(() => {
       setIsPlaying(true);
       song_sound.currentTime = 0;
       song_sound.play().catch((error) => {
         console.error("Error autoplaying song:", error);
+        setIsPlaying(false);
       });
-      setTimeout(() => setIsPlaying(false), 2000);
     }, 70);
 
-    // Cleanup timeout on unmount
-    return () => clearTimeout(playTimeout);
-  }, []);
+    // Cleanup
+    return () => {
+      clearTimeout(playTimeout);
+      song_sound.removeEventListener('ended', handleAudioEnd);
+    };
+  }, [song_sound]);
 
   const handlePlay = () => {
     setIsPlaying(true);
     song_sound.currentTime = 0;
     song_sound.play().catch((error) => {
       console.error("Error playing song:", error);
+      setIsPlaying(false);
     });
-    setTimeout(() => setIsPlaying(false), 2000);
   };
   
   return (
@@ -44,7 +54,7 @@ const VinylPlayerMiddle = ({ answers, selected_answer, set_selected_answer, song
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      {/* Top progress bar */}
+      {/* Top progress bar
       <div className="flex gap-1 mb-8">
         {Array.from({ length: 10 }).map((_, i) => (
           <motion.div
@@ -58,13 +68,13 @@ const VinylPlayerMiddle = ({ answers, selected_answer, set_selected_answer, song
             transition={{ delay: i * 0.1 }}
           />
         ))}
-      </div>
+      </div> */}
 
       {/* Giant central audio visualization area */}
       <div className="flex-1 flex flex-col items-center justify-center">
         {/* Vinyl record style player */}
         <motion.div
-          className="relative w-48 h-48 mb-8"
+          className="relative w-72 h-72 mb-8"
           animate={isPlaying ? { rotate: 360 } : {}}
           transition={isPlaying ? { repeat: Infinity, duration: 3, ease: "linear" } : {}}
         >
@@ -75,28 +85,28 @@ const VinylPlayerMiddle = ({ answers, selected_answer, set_selected_answer, song
           />
           
           {/* Grooves */}
-          <div className="absolute inset-3 rounded-full bg-background/20" />
-          <div className="absolute inset-6 rounded-full bg-background/15" />
-          <div className="absolute inset-9 rounded-full bg-background/10" />
+          <div className="absolute inset-[18px] rounded-full bg-background/20" />
+          <div className="absolute inset-[36px] rounded-full bg-background/15" />
+          <div className="absolute inset-[54px] rounded-full bg-background/10" />
           
           {/* Center label */}
           <motion.button
             onClick={handlePlay}
-            className="absolute inset-12 rounded-full bg-card flex items-center justify-center shadow-inner cursor-pointer"
+            className="absolute inset-[72px] rounded-full bg-card flex items-center justify-center shadow-inner cursor-pointer"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
           >
             {isPlaying ? (
-              <Volume2 className="w-8 h-8 text-primary animate-pulse" />
+              <Volume2 className="w-12 h-12 text-primary animate-pulse" />
             ) : (
-              <Play className="w-8 h-8 text-primary ml-1" />
+              <Play className="w-12 h-12 text-primary ml-1" />
             )}
           </motion.button>
 
           {/* Spinning indicator */}
           {isPlaying && (
             <motion.div
-              className="absolute -inset-4 rounded-full border-2 border-dashed border-primary/30"
+              className="absolute -inset-6 rounded-full border-2 border-dashed border-primary/30"
               animate={{ rotate: -360 }}
               transition={{ repeat: Infinity, duration: 8, ease: "linear" }}
             />

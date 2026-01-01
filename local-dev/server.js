@@ -1,3 +1,7 @@
+// ============================================================================
+// IMPORTS & SERVER SETUP
+// ============================================================================
+
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { get_random_songs_from_server } from "./get_random_songs_from_server.js";
@@ -10,177 +14,222 @@ const io = new Server(httpServer, {
   },
 });
 
-//console.log('Songs:', songs)
-// for (const object of songs) {
-//   console.log(object.audioUrl)
-//   console.log(object.correctAnswer)
-//   console.log(object.options)
-// }
-// each song has a audio url, a correct answer, and 4 options
+
+// ============================================================================
+// DATA STRUCTURES
+// ============================================================================
 
 let server_side_rooms = {};
-
-// const createServerSideRoomSchema = () => {
-//   return {
-//     players: {},
-//     questions: {
-//       question_set_0: {
-//         answers: ['22', "Don't Blame Me", 'I Did Something Bad', 'Miss Americana & The Heartbreak Prince', 'Red', 'The Man'],
-//         answer_options: {
-//           '22': ['Style', 'Shake It Off', 'We Are Never Getting Back Together'],
-//           "Don't Blame Me": ['Look What You Made Me Do', 'Getaway Car', 'Delicate'],
-//           'I Did Something Bad': ['End Game', 'Gorgeous', 'King of My Heart'],
-//           'Miss Americana & The Heartbreak Prince': ['Cruel Summer', 'The Archer', 'Lover'],
-//           'Red': ['All Too Well', 'I Knew You Were Trouble', 'State of Grace'],
-//           'The Man': ['ME!', 'You Need To Calm Down', 'Paper Rings']
-//         }
-//       }
-//     }, 
-//     currentQuestionIndex: 0,
-//     currentQuestionTime: 13
-//   };
-// };
-
-// const createServerSideRoomSchema2 = () => {
-//   return {
-//     players: {},
-//     questions: {
-//       question_set_0: {
-//         answers: songs.map(song => song.name),
-//         answer_options: {
-//           [songs[0].name]: [songs[1].name, songs[2].name, songs[3].name],
-//           [songs[1].name]: [songs[0].name, songs[2].name, songs[3].name],
-//           [songs[2].name]: [songs[0].name, songs[1].name, songs[3].name],
-//           [songs[3].name]: [songs[0].name, songs[1].name, songs[2].name]
-//         }
-//       }
-//     }, 
-//     currentQuestionIndex: 0,
-//     currentQuestionTime: 13
-//   };
-// };
+// Structure:
+// {
+//   [roomId]: {
+//     players: { [socketId]: { score: number } },
+//     answers_options_with_urls: [...],
+//     currentQuestionIndex: number,
+//     timerId: number | null,
+//     timeRemaining: number
+//   }
+// }
 
 
+// ============================================================================
+// ROOM MANAGEMENT
+// ============================================================================
 
 const handle_join_room = async (socket, roomId) => {
-  /* sets up the server side room but also joins the socket.join roomId */
-  // console.log(`Client joined room ${roomId}`);
-  // console.log('\n', 'server_side_rooms', server_side_rooms, '\n');
-
+  // Create room if it doesn't exist
   if (!server_side_rooms[roomId]) {
-    const answers_options_with_urls = await get_random_songs_from_server()
+    const answers_options_with_urls = await get_random_songs_from_server();
     console.log("Answers options with urls:", answers_options_with_urls);
+    
     server_side_rooms[roomId] = {
       players: {},
       answers_options_with_urls: answers_options_with_urls, 
       currentQuestionIndex: 0,
-    }
+      timerId: null,
+      timeRemaining: 13
+    };
   }
 
-  server_side_rooms[roomId].players[socket.id] = { score: 0 };
+  // Add player to room
+  server_side_rooms[roomId].players[socket.id] = { score: 0, has_answered: false };
   socket.join(roomId);
- 
+  console.log(`Player ${socket.id} joined room ${roomId}`);
+};
+
+
+// ============================================================================
+// GAME LOGIC - TIMER
+// ============================================================================
+
+const start_question_timer = (roomId) => {
+  const room = server_side_rooms[roomId];
+  
+  // Clear any existing timer
+  if (room.timerId) {
+    clearInterval(room.timerId);
+  }
+  
+  // Reset time
+  room.timeRemaining = 13;
+  
+  // Start countdown
+  room.timerId = setInterval(() => {
+    room.timeRemaining--;
+    console.log(`Room ${roomId} - Time remaining: ${room.timeRemaining}s`);
+    
+    // Emit to clients for UI countdown
+    io.to(roomId).emit("timer_tick", { timeRemaining: room.timeRemaining });
+    
+    if (room.timeRemaining <= 0) {
+      clearInterval(room.timerId);
+      console.log(`Room ${roomId} - TIME'S UP!`);
+      advance_to_next_question(roomId);
+    }
+  }, 1000);
+};
+
+
+// ============================================================================
+// GAME LOGIC - QUESTION FLOW
+// ============================================================================
+
+const advance_to_next_question = (roomId) => {
+  const room = server_side_rooms[roomId];
+
+  Object.values(room.players).forEach(player => {
+    player.has_answered = false;
+  });
+  
+  // Clear the timer
+  if (room.timerId) {
+    clearInterval(room.timerId);
+    room.timerId = null;
+  }
+  
+  console.log(`Room ${roomId} - Current question index: ${room.currentQuestionIndex}`);
+  
+  // Check if quiz should end
+  if (room.currentQuestionIndex >= 5) {
+    io.to(roomId).emit("end_quiz", {
+      message: "Quiz ended",
+      allScores: room.players,
+      currentQuestionIndex: room.currentQuestionIndex
+    });
+    console.log(`Room ${roomId} - Quiz ended`);
+  } else {
+    // Move to next question
+    io.to(roomId).emit("next_question", {
+      message: "Next question...",
+      allScores: room.players
+    });
+    room.currentQuestionIndex++;
+    
+    // Start timer for next question
+    start_question_timer(roomId);
+  }
+};
+
+
+// ============================================================================
+// EVENT HANDLERS
+// ============================================================================
+
+const handle_start_quiz = (roomId) => {
+  console.log(`Starting quiz for room ${roomId}`);
+  
+  io.to(roomId).emit("start_quiz_response", {
+    message: "Starting quiz...",
+    answer_options_with_urls: server_side_rooms[roomId].answers_options_with_urls,
+    quiz_length: 13
+  });
+  
+  // Start the timer for the first question
+  start_question_timer(roomId);
 };
 
 const handle_submit_answer = (socket, roomId, answer) => {
   const socket_id = socket.id;
+  const room = server_side_rooms[roomId];
 
-  const current_question_set = server_side_rooms[roomId].answers_options_with_urls[server_side_rooms[roomId].currentQuestionIndex]
-  console.log('current_question_set', current_question_set)
+  const current_question_set = room.answers_options_with_urls[room.currentQuestionIndex];
+  console.log(`Room ${roomId} - Player ${socket_id} submitted answer:`, answer);
 
+  // Check if answer is correct
   if (current_question_set.correctAnswer === answer) {
-    console.log(`Client socket id ${socket.id} answered correctly for room ${roomId}`);
-    server_side_rooms[roomId].players[socket_id].score++;
-  }
-  else {
-    console.log(`Client socket id ${socket.id} answered incorrectly for room ${roomId}`);
-  }
-
-  console.log('currentQuestionIndex', server_side_rooms[roomId].currentQuestionIndex)
-  if (server_side_rooms[roomId].currentQuestionIndex === 5) {
-    io.to(roomId).emit("end_quiz", {
-      message: "Quiz ended",
-      playerScore: server_side_rooms[roomId].players[socket_id].score,
-      allScores: server_side_rooms[roomId].players,
-      currentQuestionIndex: server_side_rooms[roomId].currentQuestionIndex
-    });
+    console.log(`✓ Correct answer from ${socket_id}`);
+    room.players[socket_id].score++;
   } else {
-    io.to(roomId).emit("next_question", {
-      message: "Next question...",
-      playerScore: server_side_rooms[roomId].players[socket_id].score,
-      allScores: server_side_rooms[roomId].players
-    });
-    server_side_rooms[roomId].currentQuestionIndex++;
+    console.log(`✗ Incorrect answer from ${socket_id}`);
   }
-}
+  if (room.players[socket_id].has_answered) {
+    console.log(`Player ${socket_id} has already answered`);
+    return;
+  }
+  room.players[socket_id].has_answered = true;
+
+  if (Object.values(room.players).every(player => player.has_answered)) {
+    console.log(`All players have answered`);
+    advance_to_next_question(roomId);
+  }
+
+  // // Reset timer - give full 13 seconds for next question
+  // start_question_timer(roomId);
+};
+
+const handle_disconnect = (socket) => {
+  console.log(`Client ${socket.id} disconnected`);
+  
+  // Find and clean up the room this player was in
+  for (const roomId in server_side_rooms) {
+    const room = server_side_rooms[roomId];
+    
+    if (room.players[socket.id]) {
+      delete room.players[socket.id];
+      console.log(`Removed player ${socket.id} from room ${roomId}`);
+      
+      // If room is empty, delete it
+      if (Object.keys(room.players).length === 0) {
+        if (room.timerId) {
+          clearInterval(room.timerId);
+        }
+        delete server_side_rooms[roomId];
+        console.log(`Deleted empty room ${roomId}`);
+      }
+    }
+  }
+};
 
 
-
+// ============================================================================
+// SOCKET CONNECTION
+// ============================================================================
 
 io.on("connection", (socket) => {
-  // All socket listeners in one place
+  console.log(`New client connected: ${socket.id}`);
 
   socket.on("join_room", (roomId) => {
     handle_join_room(socket, roomId);
   });
 
   socket.on("start_quiz", (roomId) => {
-
-    io.to(roomId).emit("start_quiz_response", {
-      message: "Starting quiz...",
-      answer_options_with_urls: server_side_rooms[roomId].answers_options_with_urls, // array of objects with answer_options and audioUrl
-      quiz_length: 13
-    });
+    handle_start_quiz(roomId);
   });
 
   socket.on("submit_answer", (data) => {
     handle_submit_answer(socket, data.room_id, data.answer);
   });
-});
 
-io.on("disconnect", (socket) => {
-  console.log(`Client disconnected from room ${socket.room}`);
-  if (server_side_rooms[roomId]) {
-    delete server_side_rooms[roomId].players[socket.id];
-  }
-  if (server_side_rooms[roomId] && Object.keys(server_side_rooms[roomId].players).length === 0) {
-    delete server_side_rooms[roomId];
-  }
-  socket.leave(roomId);
-  console.log(`Client left room ${roomId}`);
+  socket.on("disconnect", () => {
+    handle_disconnect(socket);
+  });
 });
 
 
-
+// ============================================================================
+// START SERVER
+// ============================================================================
 
 httpServer.listen(8080, () => {
-  console.log('Server is running on port 8080');
+  console.log('🎵 13seconds server is running on port 8080');
 });
-
-const game_loop = () => {
-  const gameName = "13seconds";
-  let timeLeft = 13;
-
-  console.log(`Starting ${gameName} match...`);
-
-  const timer = setInterval(() => {
-    timeLeft--;
-    console.log(`Time remaining: ${timeLeft}s`);
-    if (timeLeft === 0) {
-      console.log("TIME IS UP! 🎤");
-      clearInterval(timer);
-    }
-  }, 1000);
-}
-
-// so ok what does this need to do
-// for each question in the questions array
-// // display the question
-// // wait for the user to answer the question
-// // check if the answer is correct
-// // if it is correct, add 1 to the score
-// // if it is incorrect, subtract 1 from the score
-// // disply the score
-// // end of round display the current total scores
-
-
