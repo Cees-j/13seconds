@@ -6,6 +6,7 @@ import { Play } from "lucide-react";
 import Link from "next/link";
 import { v4 as uuidv4 } from 'uuid';
 import { useEffect, useState } from "react";
+import { SpotifySignIn } from "./SpotifySignIn";
 
 
 
@@ -110,6 +111,8 @@ export const Hero = () => {
             <span className="absolute inset-0 rounded-full animate-shimmer" />
           </Link>
         </motion.div>
+
+        <SpotifySignIn />
 
         {/* Stats or social proof hint */}
         <motion.div
