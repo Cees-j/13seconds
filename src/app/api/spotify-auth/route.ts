@@ -10,13 +10,19 @@ export async function GET(request: Request) {
   // Debug: log what we're reading
   console.log('SPOTIFY_REDIRECT_URI:', redirect_uri);
 
-  return Response.redirect('https://accounts.spotify.com/authorize?' +
+  setTimeout(() => { console.log('Redirecting to Spotify auth...'); }, 10000);
+
+  try {return Response.redirect('https://accounts.spotify.com/authorize?' +
     new URLSearchParams({
       response_type: 'code',
-      client_id: client_id || '',
-      scope: scope,
-      redirect_uri: redirect_uri || '',
-      state: state || '',
-    }).toString(),
-  );
+        client_id: client_id || '',
+        scope: scope,
+        redirect_uri: redirect_uri || '',
+        state: state || '',
+      }).toString(),
+    );
+  } catch (error) {
+    console.error('Error redirecting to Spotify auth:', error);
+    return Response.json({ error: 'Failed to redirect to Spotify auth' }, { status: 500 });
+  }
 }

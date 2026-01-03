@@ -13,9 +13,30 @@ import { SpotifySignIn } from "./SpotifySignIn";
 export const Hero = () => {
 
   const [roomId, setRoomId] = useState<string>("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showSignIn, setShowSignIn] = useState(false);
+
   useEffect(() => {
     setRoomId("13seconds-" + uuidv4());
   }, []);
+
+  useEffect(() => {
+    // Check if user is authenticated by looking for cookie
+    const cookies = document.cookie.split(';');
+    const authenticated = cookies.some(cookie => 
+      cookie.trim().startsWith('spotify_authenticated=')
+    );
+    setIsAuthenticated(authenticated);
+  }, []);
+
+  const handleCreateRoomClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!isAuthenticated) {
+      e.preventDefault();
+      setShowSignIn(true);
+    }
+    // If authenticated, let the Link navigate normally
+  };
+
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden px-4 py-20">
@@ -102,17 +123,24 @@ export const Hero = () => {
         >
           <Link 
             href={`/room/${roomId}`}
+            onClick={handleCreateRoomClick}
             className="group relative px-8 py-4 rounded-full glow-button text-lg font-semibold text-primary-foreground flex items-center gap-3 animate-pulse-glow hover:bg-primary-foreground hover:text-primary"
-           // prefetch={false}
-            >
+            // prefetch={false}
+          >
             <Play className="w-5 h-5 fill-current" />
-
             Create Room
             <span className="absolute inset-0 rounded-full animate-shimmer" />
           </Link>
         </motion.div>
 
-        <SpotifySignIn />
+        {/* Show Spotify Sign In Modal when needed */}
+        {showSignIn && (
+          <SpotifySignIn 
+            isAuthenticated={isAuthenticated} 
+            setIsAuthenticated={setIsAuthenticated}
+            onClose={() => setShowSignIn(false)}
+          />
+        )}
 
         {/* Stats or social proof hint */}
         <motion.div

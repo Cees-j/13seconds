@@ -9,6 +9,7 @@ import  HomeButton  from "./components/home-button";
 import LoadingScreen from "./components/loading-screen";
 import TimerBar from "./components/timer-bar";
 import Link from "next/link";
+import toast from "react-hot-toast";
 
 export default function main_quiz_room() {
 
@@ -69,6 +70,7 @@ export default function main_quiz_room() {
     socket.on("connect_error", (error: any) => {
       console.log("connect_error", error);
       router.push("/");
+      toast.error("Failed to connect to server. Please try again.");
     });
 
     socket.on("start_quiz_response", (message) => {
